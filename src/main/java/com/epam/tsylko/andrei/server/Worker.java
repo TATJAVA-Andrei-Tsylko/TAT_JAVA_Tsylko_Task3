@@ -5,15 +5,24 @@ import org.apache.log4j.Logger;
 
 import java.util.concurrent.Callable;
 
-public class Worker implements Callable<String> {
+public class Worker implements Callable<Worker> {
 
     private final static Logger logger = Logger.getLogger(Worker.class);
-    private String msg;
+
+    private String request;
     private String response;
 
     public Worker(String msg) {
-        this.msg = msg;
+        this.request = msg;
 
+    }
+
+    public static Logger getLogger() {
+        return logger;
+    }
+
+    public String getRequest() {
+        return request;
     }
 
     public String getResponse() {
@@ -21,17 +30,25 @@ public class Worker implements Callable<String> {
     }
 
     @Override
-    public String call() throws Exception {
+    public Worker call() throws Exception {
         if (logger.isDebugEnabled()) {
-            logger.debug("Thread name: " + Thread.currentThread().getName() + "; request: " + msg);
+            logger.debug("Thread name: " + Thread.currentThread().getName() + "; request: " + request);
         }
 
         Controller controller = new Controller();
-        response = controller.executeTask(msg);
+        response = controller.executeTask(request);
 
         if (logger.isDebugEnabled()) {
             logger.debug("Thread name: " + Thread.currentThread().getName() + "; response: " + response);
         }
-        return response;
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "Worker{" +
+                "request='" + request + '\'' +
+                ", response='" + response + '\'' +
+                '}';
     }
 }
