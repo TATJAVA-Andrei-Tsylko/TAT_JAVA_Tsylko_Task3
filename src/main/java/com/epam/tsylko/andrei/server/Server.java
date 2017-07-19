@@ -22,8 +22,6 @@ public class Server implements Runnable {
     private boolean isStopped = false;
 
 
-
-
     private Server() {
     }
 
@@ -44,17 +42,11 @@ public class Server implements Runnable {
     @Override
     public void run() {
         while (!isStopped) {
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             startCommandExecute();
         }
     }
 
-    public synchronized void processRequest(String request) {
+    public void processRequest(String request) {
 
         if (logger.isDebugEnabled()) {
             logger.debug("Server.processRequest()");
@@ -63,13 +55,28 @@ public class Server implements Runnable {
         try {
             queue.put(request);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+           logger.error("Some error occurred in queue",e);
         }
 
         if (logger.isDebugEnabled()) {
             logger.debug("Queue size():" + queue.size());
         }
     }
+
+    private void startCommandExecute() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Server.startCommandExecute()");
+            logger.debug("Server.startCommandExecute() -> queue size: " + queue.size());
+        }
+        if (queue.size() != 0 && !queue.isEmpty()) {
+            try {
+                storeResult();
+            } catch (InterruptedException | ExecutionException e) {
+                logger.error("Can't execute thread", e);
+            }
+        }
+    }
+
 
     public Worker getRequestResponse() {
         Worker worker;
@@ -86,40 +93,21 @@ public class Server implements Runnable {
     }
 
 
-    private synchronized void startCommandExecute() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Server.startCommandExecute()");
-            logger.debug("Server.startCommandExecute() -> queue size: " + queue.size());
-        }
-        if (queue.size() != 0 && !queue.isEmpty()) {
-            try {
-                storeResult();
-            } catch (InterruptedException | ExecutionException e) {
-                logger.error("Can't execute thread", e);
-            }
-        }
-    }
-
-
-
     private void storeResult() throws InterruptedException, ExecutionException {
         if (logger.isDebugEnabled()) {
             logger.debug("Server.storeResult()");
         }
         List<Future<Worker>> list = executeRequests();
-        Iterator<Future<Worker>> workerIterator = list.iterator();
-        while (workerIterator.hasNext())
-//        for (Future<Worker> f : list) {
-//            container.put(extractValueFromFuture(f));
-//            if (logger.isDebugEnabled()) {
-//                logger.debug("Server.storeResult(). Container size: " + container.getQueue().size());
-//            }
-//        }
+        for (Future<Worker> f : list) {
+            container.put(extractValueFromFuture(f));
+            if (logger.isDebugEnabled()) {
+                logger.debug("Server.storeResult(). Container size: " + container.getQueue().size());
+            }
+        }
         if (logger.isDebugEnabled()) {
             logger.debug("List size storeResult(): " + list.size());
         }
     }
-
 
 
     private List<Future<Worker>> executeRequests() throws InterruptedException {
@@ -134,7 +122,6 @@ public class Server implements Runnable {
     }
 
 
-
     private List<Callable<Worker>> getRequests() {
         if (logger.isDebugEnabled()) {
             logger.debug("Server.getRequests()");
@@ -143,7 +130,6 @@ public class Server implements Runnable {
         List<Callable<Worker>> callables = list.stream().map(item -> new Worker(item)).collect(Collectors.toList());
         return callables;
     }
-
 
 
     private <T> T extractValueFromFuture(Future<T> future) {
@@ -156,7 +142,7 @@ public class Server implements Runnable {
         try {
             val = future.get();
         } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            logger.error("Cannot extract Future value", e);
         }
         if (logger.isDebugEnabled()) {
             logger.debug("Server.extractValueFromFuture() -> value : " + val.toString());
@@ -170,7 +156,7 @@ public class Server implements Runnable {
             try {
                 list.add(q.take());
             } catch (InterruptedException e) {
-                logger.error("Cannot cast queue to list",e);
+                logger.error("Cannot cast queue to list", e);
             }
         }
         return list;

@@ -27,11 +27,17 @@ public class ResidenceServiceImpl implements ResidenceService {
         try {
 
             if (checkInputtedAddressData(address)) {
-                dao.addAddressToUser(address);
+
+                synchronized (this) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("ResidenceServiceImpl.enterHomeAddress() -> synchronized");
+                    }
+                    dao.addAddressToUser(address);
+                }
             }
 
         } catch (UtilException e) {
-            throw new ServiceException("Incorrect values. This values don't math to address object",e);
+            throw new ServiceException("Incorrect values. This values don't math to address object", e);
         } catch (DAOException e) {
             throw new ServiceException("Error occurred in enterHomeAddress() method in service layer ResidenceServiceImpl", e);
         }
@@ -49,11 +55,18 @@ public class ResidenceServiceImpl implements ResidenceService {
         try {
 
             if (checkInputtedAddressData(address)) {
-                dao.updateUsersAddress(address);
+
+                synchronized (this) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("ResidenceServiceImpl.updateHomeAddress() -> synchronized");
+                    }
+                    dao.updateUsersAddress(address);
+                }
+
             }
 
         } catch (UtilException e) {
-            throw new ServiceException("Incorrect values. This values don't math to address object",e);
+            throw new ServiceException("Incorrect values. This values don't math to address object", e);
 
         } catch (DAOException e) {
             throw new ServiceException("Error occurred in updateHomeAddress() method in service layer ResidenceServiceImpl", e);
@@ -71,7 +84,7 @@ public class ResidenceServiceImpl implements ResidenceService {
         Address address;
         try {
 
-           address = dao.getAddress(addressId);
+            address = dao.getAddress(addressId);
 
         } catch (DAOException e) {
             throw new ServiceException("Error occurred in getCurrentAddress() method in service layer ResidenceServiceImpl", e);
@@ -83,7 +96,7 @@ public class ResidenceServiceImpl implements ResidenceService {
     private boolean checkInputtedAddressData(Address address) throws UtilException {
         Util.isNull(address.getCountry(), address.getCity(), address.getStreet());
         Util.isEmptyString(address.getCountry(), address.getCity(), address.getStreet());
-        Util.isNumberPositive(address.getHouse(),address.getRoom());
+        Util.isNumberPositive(address.getHouse(), address.getRoom());
         return true;
     }
 }

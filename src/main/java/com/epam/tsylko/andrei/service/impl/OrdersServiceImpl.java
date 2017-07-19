@@ -28,13 +28,17 @@ public class OrdersServiceImpl implements OrdersService {
         }
 
         OrdersRepositoryDao ordersRepositoryDao = daoFactory.getMysqlOrdersRepositoryDao();
-        ServiceFactory serviceFactory = ServiceFactory.getInstance();
-        ClientService service = serviceFactory.getClientService();
-
 
         try {
 
-            ordersRepositoryDao.reserveBookByUser(book, user);
+            synchronized (this) {
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("OrdersServiceImpl.reserveBook() -> synchronized");
+                    }
+
+                ordersRepositoryDao.reserveBookByUser(book, user);
+            }
 
         } catch (DAOException e) {
             throw new ServiceException("Error occurred in reserveBook() method in service layer, class OrdersServiceImpl", e);
@@ -95,7 +99,6 @@ public class OrdersServiceImpl implements OrdersService {
             } else {
                 throw new ServiceException("Request doesn't content ordersId");
             }
-
 
         } catch (DAOException e) {
             throw new ServiceException("Error occurred in setBookIsTakenAwayByUser() method in service layer, class OrdersServiceImpl", e);

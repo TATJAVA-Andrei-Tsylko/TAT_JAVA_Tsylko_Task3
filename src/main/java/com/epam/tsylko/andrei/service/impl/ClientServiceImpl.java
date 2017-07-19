@@ -16,6 +16,7 @@ import java.util.List;
 
 
 public class ClientServiceImpl implements ClientService {
+
     private final static Logger logger = Logger.getLogger(ClientServiceImpl.class);
     private final DAOFactory daoFactory = DAOFactory.getInstance();
     private final static boolean USER_DISABLED = false;
@@ -38,9 +39,15 @@ public class ClientServiceImpl implements ClientService {
                 logger.debug("registrtion user " + user.toString());
             }
 
-            checkLogin(user);
+            synchronized (this) {
 
-            userDao.registration(user);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("ClientServiceImpl.registration() -> synchronized");
+                }
+
+                checkLogin(user);
+                userDao.registration(user);
+            }
 
         } catch (DAOException e) {
             throw new ServiceException("Service layer. exception occurred in dao layer", e);
@@ -66,7 +73,7 @@ public class ClientServiceImpl implements ClientService {
             }
 
             Util.checkHash(userFromDB.getPassword(), user.getPassword());
-            if(userFromDB.isStatus()==USER_DISABLED){
+            if (userFromDB.isStatus() == USER_DISABLED) {
                 throw new ServiceException("User was banned.");
             }
         } catch (DAOException e) {
@@ -88,12 +95,20 @@ public class ClientServiceImpl implements ClientService {
         try {
 
             Util.checkEmail(user);
-            if(user.getPassword()!=null) {
+            if (user.getPassword() != null) {
                 user.setPassword(Util.getHashForPassword(user.getPassword()));
-            }else{
+            } else {
                 user.setPassword(userDao.getUser(user.getId()).getPassword());
             }
-            userDao.editUser(user);
+
+            synchronized (this) {
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("ClientServiceImpl.editUser() -> synchronized");
+                }
+
+                userDao.editUser(user);
+            }
 
         } catch (DAOException e) {
             throw new ServiceException("Service layer. exception occurred in dao layer", e);

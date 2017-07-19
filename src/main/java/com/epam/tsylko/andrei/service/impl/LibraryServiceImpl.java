@@ -27,8 +27,16 @@ public class LibraryServiceImpl implements LibraryService {
 
         BookDao bookDao = daoFactory.getMysqlBookImpl();
         try {
+
             if (checkInputtedBookData(book)) {
-                bookDao.addBook(book);
+
+                synchronized (this) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("LibraryServiceImpl.addNewBook() -> synchronized");
+                    }
+                    bookDao.addBook(book);
+                }
+
             }
 
         } catch (UtilException e) {
@@ -49,19 +57,14 @@ public class LibraryServiceImpl implements LibraryService {
 
         try {
 
-            Book bookFromDB = bookDao.getBook(book.getId());
-            if (logger.isDebugEnabled()) {
-                logger.debug("bookFromDB " + bookFromDB.toString());
-            }
-
             if (checkInputtedBookData(book)) {
 
-
-                if (logger.isDebugEnabled()) {
-                    logger.debug("LibraryServiceImpl.addEditedBook() -> copyAllFields -> " + bookFromDB.toString());
+                synchronized (this) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("LibraryServiceImpl.addEditedBook() -> synchronized");
+                    }
+                    bookDao.editBook(book);
                 }
-
-                bookDao.editBook(bookFromDB);
             }
 
         } catch (UtilException e) {
